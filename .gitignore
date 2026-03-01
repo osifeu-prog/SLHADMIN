@@ -31,3 +31,25 @@ telegram-guardian_backupkit_*.zip
 # local tooling
 tools/bfg/
 tools/filter_index_remove.py
+# --- local junk ---
+.venv/
+__pycache__/
+*.pyc
+logs/
+REPORT_*/
+guardian_local.db
+*.bak_*
+*.bak
+*_backupkit_*.zip
+_SCAN_*.txt
+
+# --- node ---
+**/node_modules/
+**/.wrangler/
+**/.vite/
+
+# --- secrets ---
+.env
+tg-webhook-worker/.tg_secret_token.txt
+tg-webhook-worker/.vault/
+tg-webhook-worker/.vault_guardian/

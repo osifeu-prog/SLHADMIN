@@ -1,0 +1,12 @@
+﻿name = "tg-webhook-worker"
+main = "src/index.ts"
+compatibility_date = "2026-02-28"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "8240ee3bbeb544bf8574cc07861d8e85"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "guardian_mvp"
+database_id = "291b1098-0827-42e8-94f6-b2648fdb192d"

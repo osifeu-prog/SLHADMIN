@@ -1,4 +1,5 @@
 import logging
+logger = logging.getLogger(__name__)
 import os
 import time
 from typing import Callable, Awaitable
@@ -6,6 +7,7 @@ from typing import Callable, Awaitable
 from telegram import Update
 from telegram import BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from sqlalchemy.exc import IntegrityError
 from telegram.error import Conflict
 
 from bot.config import BOT_TOKEN, ENV, ADMIN_CHAT_ID, WEBHOOK_URL, MODE
@@ -563,6 +565,86 @@ async def post_init(app):
     except Exception:
         pass
 
+def _safe_add_cmd(app, name: str, func, with_latency_fn):
+    """
+    Register a CommandHandler only if func exists.
+    Prevents startup crashes due to NameError while iterating fast.
+    """
+    try:
+        if func is None:
+            return
+        app.add_handler(CommandHandler(name, with_latency_fn(name, func)))
+    except NameError:
+        # func name not defined in module globals
+        return
+    except Exception:
+        logger.exception("safe_add_cmd failed for %s", name)
+
+async def points_cmd(update, context):
+    """
+    /points -> show internal wallet balance for current Telegram user.
+    """
+    try:
+        u = getattr(update, "effective_user", None)
+        if u is None or getattr(u, "id", None) is None:
+            return
+        bal = await get_points_balance(int(u.id))
+        msg = f"points balance: {bal}"
+        m = getattr(update, "effective_message", None)
+        if m is not None:
+            await m.reply_text(msg)
+    except Exception as e:
+        logger.exception("points_cmd failed")
+        try:
+            m = getattr(update, "effective_message", None)
+            if m is not None:
+                await m.reply_text(f"points error: {type(e).__name__}")
+        except Exception:
+            pass
+
+
+async def credit_points_cmd(update, context):
+    """
+    /credit_points <telegram_id> <amount> <ref>
+    Admin only. Idempotent by (user_id, ref) unique constraint.
+    """
+    try:
+        # admin check
+        if not is_admin(update):
+            m = getattr(update, "effective_message", None)
+            if m is not None:
+                await m.reply_text("Not authorized.")
+            return
+
+        args = getattr(context, "args", []) or []
+        if len(args) < 3:
+            m = getattr(update, "effective_message", None)
+            if m is not None:
+                await m.reply_text("Usage: /credit_points <telegram_id> <amount> <ref>")
+            return
+
+        user_id = int(args[0])
+        amount = int(args[1])
+        ref = str(args[2])
+
+        # add_points already exists and uses DB
+        await add_points(user_id, amount, ref=ref, reason="admin_credit")
+        m = getattr(update, "effective_message", None)
+        if m is not None:
+            await m.reply_text(f"Credited {amount} to {user_id} (ref={ref}).")
+    except IntegrityError:
+        m = getattr(update, "effective_message", None)
+        if m is not None:
+            await m.reply_text("Duplicate ref (already credited).")
+    except Exception as e:
+        logger.exception("credit_points_cmd failed")
+        try:
+            m = getattr(update, "effective_message", None)
+            if m is not None:
+                await m.reply_text(f"credit_points error: {type(e).__name__}")
+        except Exception:
+            pass
+
 def build_application():
     if not BOT_TOKEN:
         raise ValueError("BOT_TOKEN not set")
@@ -598,6 +680,8 @@ def build_application():
     app.add_handler(CommandHandler("approve", with_latency("approve", approve_cmd)))
     app.add_handler(CommandHandler("reject", with_latency("reject", reject_cmd)))
     app.add_handler(CommandHandler("add_account", with_latency("add_account", add_account_cmd)))
+    _safe_add_cmd(app, "points", globals().get("points_cmd"), with_latency)
+    _safe_add_cmd(app, "credit_points", globals().get("credit_points_cmd"), with_latency)
     app.add_handler(CommandHandler("prices", with_latency("prices", prices_cmd)))
     app.add_handler(CommandHandler("set_price", with_latency("set_price", set_price_cmd)))
     app.add_handler(CommandHandler("trade", with_latency("trade", trade_cmd)))
@@ -609,6 +693,7 @@ import json
 import time
 from telegram import Update
 from telegram.ext import ContextTypes
+from sqlalchemy.exc import IntegrityError
 
 async def healthz_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:

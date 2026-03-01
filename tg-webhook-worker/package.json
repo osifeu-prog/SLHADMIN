@@ -1,0 +1,13 @@
+{
+  "name": "tg-webhook-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.18",
+    "@cloudflare/workers-types": "^4.20250301.0",
+    "typescript": "^5.7.0"
+  }
+}

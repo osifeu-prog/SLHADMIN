@@ -1,4 +1,4 @@
-﻿import os
+import os
 import logging
 import asyncio
 from typing import Optional
@@ -40,18 +40,29 @@ async def _retry(name: str, fn, attempts: int, delay_s: float):
 
 async def init_infrastructure(wait: bool = True):
     global engine, SessionLocal, redis_client
-
-    db_url = os.getenv("DATABASE_URL")
+    db_url = (os.getenv("ASYNC_DATABASE_URL") or "").strip() or (os.getenv("DATABASE_URL") or "").strip()
     redis_url = os.getenv("REDIS_URL")
     if not db_url:
         raise RuntimeError("DATABASE_URL missing")
     if not redis_url:
-        raise RuntimeError("REDIS_URL missing")
+        redis_url = (os.getenv("REDIS_URL") or "").strip()
+    if not redis_url:
+        # Redis is optional for local/dev; DB must still work
+        redis_client = None
+    else:
+        redis_client = redis.from_url(redis_url, decode_responses=True)
 
     engine = create_async_engine(_to_asyncpg_url(db_url), echo=False)
     SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    redis_client = redis.from_url(redis_url)
-
+    # Redis optional (local/dev): only accept valid schemes
+    redis_client = None
+    if redis_url:
+        redis_url = redis_url.strip()
+        if redis_url.startswith(("redis://", "rediss://", "unix://")):
+            try:
+                redis_client = redis.from_url(redis_url)
+            except Exception:
+                redis_client = None
     if wait:
         await _retry(
             "Postgres",
@@ -59,12 +70,13 @@ async def init_infrastructure(wait: bool = True):
             attempts=int(os.getenv("DB_WAIT_ATTEMPTS", "40")),
             delay_s=float(os.getenv("DB_WAIT_DELAY_S", "1")),
         )
-        await _retry(
-            "Redis",
-            check_redis,
-            attempts=int(os.getenv("REDIS_WAIT_ATTEMPTS", "40")),
-            delay_s=float(os.getenv("REDIS_WAIT_DELAY_S", "1")),
-        )
+        if redis_client is not None:
+            await _retry(
+                "Redis",
+                check_redis,
+                attempts=int(os.getenv("REDIS_WAIT_ATTEMPTS", "40")),
+                delay_s=float(os.getenv("REDIS_WAIT_DELAY_S", "1")),
+            )
 
     logger.info("Infrastructure initialized (wait=%s)", wait)
 
@@ -111,7 +123,7 @@ async def get_db_session():
 
 
 async def run_migrations_safe():
-    db_url = os.getenv("DATABASE_URL")
+    db_url = (os.getenv("ASYNC_DATABASE_URL") or "").strip() or (os.getenv("DATABASE_URL") or "").strip()
     if not db_url:
         logger.warning("DATABASE_URL missing, skipping migrations")
         return

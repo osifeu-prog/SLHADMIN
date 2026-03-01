@@ -1,5 +1,7 @@
-﻿import os
+import os
 import logging
+import traceback
+import json
 import time
 from pathlib import Path
 from collections import deque
@@ -27,6 +29,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+def _global_error_handler(update, context):
+    try:
+        u = getattr(update, "effective_user", None)
+        c = getattr(update, "effective_chat", None)
+        uid = getattr(u, "id", None)
+        cid = getattr(c, "id", None)
+        logger.exception("GLOBAL_ERROR: uid=%s cid=%s update=%s", uid, cid, update)
+    except Exception:
+        logger.exception("GLOBAL_ERROR: failed to log update context")
 if ENV in ("prod", "production"):
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
@@ -319,6 +331,8 @@ def main():
 
         webhook_url = _normalize_webhook_url(WEBHOOK_URL)
         url_path = _parse_webhook_path(webhook_url)
+
+        app.add_error_handler(_global_error_handler)
 
         app.run_webhook(
             listen=listen,
