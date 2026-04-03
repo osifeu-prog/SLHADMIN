@@ -1,0 +1,69 @@
+﻿name: telegram-guardian-docker-compose-enterprise
+services:
+  guardian-api:
+    build:
+      context: D:\telegram-guardian-DOCKER-COMPOSE-ENTERPRISE
+      dockerfile: Dockerfile
+    container_name: guardian-api
+    depends_on:
+      guardian-db:
+        condition: service_healthy
+        required: true
+      guardian-redis:
+        condition: service_healthy
+        required: true
+    environment:
+      BSC_ABI_PATH: bsc/abi/FullFeatureToken.json
+      BSC_CHAIN_ID: "56"
+      BSC_RPC_URL: https://bsc-dataseed.binance.org/
+      BSC_TOKEN_ADDRESS: 0xACb0A09414CEA1C879c67bB7A877E4e19480f022
+      DATABASE_URL: postgresql://postgres:postgres@guardian-db:5432/guardian
+      ENV: production
+      MODE: webhook
+      PRIVATE_KEY: ""
+      REDIS_URL: redis://guardian-redis:6379/0
+      RPC_URL: https://polygon-rpc.com
+      TELEGRAM_TOKEN: 8521882513:AAEOvQ9cor_O01xwNmGwheLvg4n9Mj4Rl44
+      WEBHOOK_URL: https://sitting-electro-suite-shakespeare.trycloudflare.com/
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8001"
+        protocol: tcp
+    restart: always
+  guardian-db:
+    container_name: guardian-db
+    environment:
+      POSTGRES_DB: guardian
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d guardian
+      timeout: 5s
+      interval: 5s
+      retries: 30
+    image: postgres:15-alpine
+    networks:
+      default: null
+    restart: always
+  guardian-redis:
+    container_name: guardian-redis
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 3s
+      interval: 5s
+      retries: 30
+    image: redis:7-alpine
+    networks:
+      default: null
+    restart: always
+networks:
+  default:
+    name: telegram-guardian-docker-compose-enterprise_default

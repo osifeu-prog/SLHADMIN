@@ -1,0 +1,80 @@
+﻿57e9b293ffeb3f339c225e6e760b6a8e15604b43 chore: ignore worker local junk artifacts
+c6df0f6740bc8f4eac239dc27b1ce76b8e674215 chore(worker): remove backups/hash junk from repo index
+b0ccf0f1344a90632f4c2421ce44d1ada4631df4 chore: enforce LF via gitattributes + renormalize
+a6249d99e0e68e72d958fca9c372c3ac4d14a45a chore: stabilize webhook ingress + points wallet + idempotency
+b2c2d8827bc1699ae616c33a276a2784b1e83580 chore: remove backups from repo
+28150ba6d2d8fad6f6087f82f3651b0aaf1b62ed chore: ignore secrets/backups/node_modules
+d82e82daab104ace10c963a028c08441cd92848f fix: restore app_factory syntax + add /health alias
+79e319644a30cc6a1cd7df91f7305e8598137bc0 chore: ignore node_modules and remove from git tracking
+7f05b8258f0ace1132b897a0ae977ed1f28d9578 backupkit: stable local webhook + run-all automation
+bd4cdc879e84b593759d4001398bee468f51e759 snapshot: local webhook via cloudflared + run-all tooling fixes
+19cc0e3d6700ec9b89ec6942ee6f5eda3bc336d0 feat(economy): add /trade /add_account /prices /set_price (manual wizard)
+681369b86385aa5efcaf83c030a3b3efc2a76567 chore(obs): structured economy/referral logs for Railway
+eb747979bf6c9200862cd5c7b991dbc5d8cc163c chore(obs): structured economy/referral logs for Railway
+d2dc112db683b07534cfea4b5878251ecdd6efc3 fix(ui): make /start fully dynamic from menu registry
+9f6241c984465167a5fa6af600e3fe3a9f637c98 feat(ui): dynamic /start /menu + setMyCommands from registry (RBAC)
+68827008695e6196a5acee6f0eb381c84b54b34a feat(economy): add commands ref/my/buy/claim + pending/approve/reject
+916da2e396d6a6c3f174c6a50de194a026a8ec8e fix(economy): ensure handlers registered for buy/claim/my/ref/pending/approve/reject
+4590ab9109d98f58ec424824d5b7559f3b2ed7d1 feat(economy): add buy/claim/my/ref + admin pending/approve/reject
+e82f87f6b672d780cebe7a27064e74a2295d8940 chore(economy): fix malformed economy migration file
+74359678751eb2ca61f78432f72bf125767edd58 feat(economy): add plans/payment_requests/points_ledger/referrals/accounts
+a2a5b6944ad9dee771055a27c40099a73f9b2d87 fix(db): make users drop_column idempotent (DROP COLUMN IF EXISTS)
+c91fd1686a226bf677c26e6f635df305190341ed fix(db): ensure users exists before altering (de19 hotfix)
+2bfe3eb67b10e0d727245bf84989803951215452 fix(db): make de19 users ops safe on empty DB (create users + IF EXISTS)
+7e1f52d0a659a45f70eb72b89f782d6a7a9f228e hotfix(bot): fix SyntaxError in start_cmd string concat
+efdde6604b1611d37714d5633a6c04bdc31a8b04 fix(db): make de19 drop_* ops idempotent via raw SQL IF EXISTS
+52523c99c81081fb7728aeab956af554c5588494 fix(bot): ensure setMyCommands configured in post_init
+15dd27ce23e52a695bff5660ba535dda13bdf084 fix(bot): show /donate and /admins in /start text
+bc704c2a121287b0bf8aa57de042e1408affccd2 fix(db): make manh_invoices drops compatible via raw SQL IF EXISTS
+890f10ec383aca23224e9db5356b70259ae3d573 fix(db): make manh_invoices drop_table idempotent (if_exists)
+5a6128a751981309f08fd5ac230d22a899886a10 fix(bot): add new cmds to /start and stable setMyCommands + menu list
+5219abd61f551b33626a324164984423d65c903f feat(bot): update /menu + setMyCommands for new admin/donate commands
+918eff6fb53d17aa08e77fc3fc51392cac044747 fix(db): make manh_invoices index drop idempotent (if_exists)
+7e894fab1ccb0132d17f57bbc16cb1f8b44387f6 fix(db): make DROP INDEX ix_manh_invoices_user idempotent (IF EXISTS)
+b6d9926fa4f097a7cb16a62652ef495450d89d04 fix(db): attach admins_requests to mergepoint to eliminate multiple heads
+b99d12e5d78984cbd4787d163a6242cc760dac25 Merge pull request #2 from osifeu-prog/feat/rbac
+c1f23f146ccfd175c269c7f08c6e7cb1a15a7a6c fix(db): remove duplicate admins migration; chain admins_requests; merge heads to single head
+ea81eaf9be75ea8be4af5c5b6fc4c335a9bd761f fix(db): merge alembic heads + ensure SessionLocal initialized
+0dd24273dc7eb318b0ff24a00468cc8c13eb4dba Merge pull request #1 from osifeu-prog/feat/rbac
+1f45a19fbe78a13573cc24fcb2b33ef2d17dcdb1 feat(db): run alembic upgrade head on startup (safe)
+d4321f2f1290e4659651abb027cc41d165e225ca feat(rbac): async db session + rbac tables + admin cmds + donate; fix migrations quoting
+cdb948f2d99b70788dd596485ddb0008c52af506 chore(infra): remove broken readyz wrappers
+491a744d54925b2254acf3c54eb86216ff6638c8 hotfix(api): readyz uses runtime_report to avoid recursion
+1af884a41b2d93a6d923e5f5a68279932c5ae4f2 fix(infra): readyz wrappers call existing postgres/redis checks
+987da864b28ec821a1993709dbb7a0a3f7d6a184 feat(db): add admins + admin_requests tables
+c0e545c3dbb68e994f00befa49cbc1ade60262e2 feat(db): add admins + admin_requests tables
+f7668a83830b6b4b5f6803312ede656bdd754dc0 fix(bot): snapshot_cmd uses local httpx import
+379c8a6597d5a0a5eb07a2a4ede7c894221bdb54 chore: show /snapshot in start/menu
+db49d3bbb8386c52569202bc3f80085e28a9898d fix(bot): import httpx for /snapshot
+ae23ca57580879e36e792406e7f1afb97b12bb1b feat(bot): re-add /snapshot (safe join-based message)
+3ccbadc4ad8d30a3d1bf40c6d4daadfdca908cc2 hotfix: remove broken /snapshot (restore bot/app_factory syntax)
+aa695b8f0a13100993cc3fd93e4dcae23e8bb358 hotfix: fix snapshot_cmd syntax crash
+60b37cece4fa7adf9afd6ce65312a157e420d279 feat(api): readyz returns db/redis latency
+101aa4dbfcf6f087308d669d1daac810470701aa feat(infra): add check_postgres/check_redis wrappers
+4270389cf6892fa1caff6f943576995ab61a31fb fix(bot): make /snapshot respond reliably
+4e59258906f85db2b28541f46e9db4a82fa20618 chore(api): flatten /snapshot JSON payload
+efd1c03c623c4be1b4550a98922545bbad826938 chore: show /snapshot in start/menu (admin)
+ebe88e7e41539fc052a7e81d91765d7e2ec0a0d1 ci: add daily status snapshot workflow
+fcde6ef649cff27e936740f137db2086e34f78e8 feat(api): add GET /snapshot endpoint
+b27432849210680a967f9d9b71d335f5f3ebe032 feat(bot): add /snapshot (admin-only)
+fdc7b45f9c4a3f41bc0c58d745ad1406bd5f590b docs: improve status snapshot (timezone-aware, include version/metrics/gitlog)
+791cfe1aff39417912ed3d39363417d36815db1f docs: add production status snapshot
+10637fcde0ea6a80173780543274e0215de05bf1 Update app_factory.py
+89914aebce836da7332c4394d3c6b6844f065812 chore: replace ? with ظ¤ in start title
+08496c5a5337683228766f40d8a01db305501b28 chore: fix title dash (?-to-emdash)
+4ea639e2a93fd80c934228d46c8e3854deb79c74 feat(metrics): add bot_commands_total counter
+d66c6e3995e31ee8926c3a9a388337a54fd28771 Update main.py
+c4d55511610e0e65a38673fe16b55e4331ae72fd chore: fix title dash (replace ? with ظ¤)
+196244eb75aedb8e0bbb49c2b79044934cd364c8 docs: regenerate complete docs set
+3caace8e17e4d7e598034fb932aa7fa500007d86 docs: add runbook + architecture + endpoints + railway + incidents
+c95201abefd38c381fd50e6f60ada32f8616c8aa feat(api): readyz returns elapsed_ms
+8f0734cf34fa444adf12a8dd7c464dd445c59a5f chore: fix title dash
+c169dea5e1223b0078411116fed46f968f265264 feat(api): readyz returns elapsed_ms (and error on failure)
+67bf14bb658c57ff7f9d0b043319433fd0a477a3 chore: final UI cleanup (dash + admin header)
+90c888193c96724ee926c572ef3a6a0c7c7f3344 fix: restore stable FastAPI server (fix indentation crash)
+6da04dfa100e9ac84ef0896680499aa0cf6c3b62 feat(metrics): bot_commands_total counter from webhook updates
+b3c486b53b34f632021e2a3de728457833451ecd feat(api): readyz returns db/redis latency + errors
+7a0b02d499850cef5d5098162396155d0286f51c chore: final UI cleanup (remove ?? and fix dash)
+955417b68ce352d5651c73f7ac1a7316ab5f8a58 chore: remove boot prints from server logs
+86e29ab7239dde2a34378003ff018f67fbf7d973 chore: final UI cleanup (remove ?? and fix dash)
+5245f22f24f77b80dc99871984e60d7cbb123793 fix: init infrastructure in FastAPI lifespan (Postgres/Redis init)

@@ -1,0 +1,50 @@
+﻿57e9b29 chore: ignore worker local junk artifacts
+c6df0f6 chore(worker): remove backups/hash junk from repo index
+b0ccf0f chore: enforce LF via gitattributes + renormalize
+a6249d9 chore: stabilize webhook ingress + points wallet + idempotency
+b2c2d88 chore: remove backups from repo
+28150ba chore: ignore secrets/backups/node_modules
+d82e82d fix: restore app_factory syntax + add /health alias
+79e3196 chore: ignore node_modules and remove from git tracking
+7f05b82 backupkit: stable local webhook + run-all automation
+bd4cdc8 snapshot: local webhook via cloudflared + run-all tooling fixes
+19cc0e3 feat(economy): add /trade /add_account /prices /set_price (manual wizard)
+681369b chore(obs): structured economy/referral logs for Railway
+eb74797 chore(obs): structured economy/referral logs for Railway
+d2dc112 fix(ui): make /start fully dynamic from menu registry
+9f6241c feat(ui): dynamic /start /menu + setMyCommands from registry (RBAC)
+6882700 feat(economy): add commands ref/my/buy/claim + pending/approve/reject
+916da2e fix(economy): ensure handlers registered for buy/claim/my/ref/pending/approve/reject
+4590ab9 feat(economy): add buy/claim/my/ref + admin pending/approve/reject
+e82f87f chore(economy): fix malformed economy migration file
+7435967 feat(economy): add plans/payment_requests/points_ledger/referrals/accounts
+a2a5b69 fix(db): make users drop_column idempotent (DROP COLUMN IF EXISTS)
+c91fd16 fix(db): ensure users exists before altering (de19 hotfix)
+2bfe3eb fix(db): make de19 users ops safe on empty DB (create users + IF EXISTS)
+7e1f52d hotfix(bot): fix SyntaxError in start_cmd string concat
+efdde66 fix(db): make de19 drop_* ops idempotent via raw SQL IF EXISTS
+52523c9 fix(bot): ensure setMyCommands configured in post_init
+15dd27c fix(bot): show /donate and /admins in /start text
+bc704c2 fix(db): make manh_invoices drops compatible via raw SQL IF EXISTS
+890f10e fix(db): make manh_invoices drop_table idempotent (if_exists)
+5a6128a fix(bot): add new cmds to /start and stable setMyCommands + menu list
+5219abd feat(bot): update /menu + setMyCommands for new admin/donate commands
+918eff6 fix(db): make manh_invoices index drop idempotent (if_exists)
+7e894fa fix(db): make DROP INDEX ix_manh_invoices_user idempotent (IF EXISTS)
+b6d9926 fix(db): attach admins_requests to mergepoint to eliminate multiple heads
+b99d12e Merge pull request #2 from osifeu-prog/feat/rbac
+c1f23f1 fix(db): remove duplicate admins migration; chain admins_requests; merge heads to single head
+ea81eaf fix(db): merge alembic heads + ensure SessionLocal initialized
+0dd2427 Merge pull request #1 from osifeu-prog/feat/rbac
+1f45a19 feat(db): run alembic upgrade head on startup (safe)
+d4321f2 feat(rbac): async db session + rbac tables + admin cmds + donate; fix migrations quoting
+cdb948f chore(infra): remove broken readyz wrappers
+491a744 hotfix(api): readyz uses runtime_report to avoid recursion
+1af884a fix(infra): readyz wrappers call existing postgres/redis checks
+987da86 feat(db): add admins + admin_requests tables
+c0e545c feat(db): add admins + admin_requests tables
+f7668a8 fix(bot): snapshot_cmd uses local httpx import
+379c8a6 chore: show /snapshot in start/menu
+db49d3b fix(bot): import httpx for /snapshot
+ae23ca5 feat(bot): re-add /snapshot (safe join-based message)
+3ccbadc hotfix: remove broken /snapshot (restore bot/app_factory syntax)

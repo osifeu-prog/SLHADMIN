@@ -1,0 +1,17 @@
+﻿{
+    "update_id":  321,
+    "message":  {
+                    "date":  1772569733,
+                    "message_id":  1,
+                    "chat":  {
+                                 "id":  224223270,
+                                 "type":  "private"
+                             },
+                    "text":  "/start",
+                    "from":  {
+                                 "id":  224223270,
+                                 "is_bot":  false,
+                                 "first_name":  "Test"
+                             }
+                }
+}

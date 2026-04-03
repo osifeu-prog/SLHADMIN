@@ -109,22 +109,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         f"```\n{ASCII_BANNER.strip()}\n```\n"
         "SLH Security + Ops Control\n\n"
-        "ברוך הבא ל-SLH Guardian.\n"
-        "מערכת לניטור תשתיות, גיבוי, ניהול תפעול, והכנה ל-SaaS מלא.\n\n"
-        "פקודות:\n"
-        "/status    סטטוס DB/Redis/Alembic\n"
-        "/menu      תפריט\n"
-        "/whoami    מי אני\n"
-        "/health    מצב מערכת\n"
+        "×‘×¨×•×ڑ ×”×‘×گ ×œ-.\n"
+        "×‍×¢×¨×›×ھ ×œ× ×™×ک×•×¨ ×ھ×©×ھ×™×•×ھ, ×’×™×‘×•×™, × ×™×”×•×œ ×ھ×¤×¢×•×œ, ×•×”×›× ×” ×œ-SaaS ×‍×œ×گ.\n\n"
+        "×¤×§×•×“×•×ھ:\n"
+        "/status    ×،×ک×ک×•×، DB/Redis/Alembic\n"
+        "/menu      ×ھ×¤×¨×™×ک\n"
+        "/whoami    ×‍×™ ×گ× ×™\n"
+        "/health    ×‍×¦×‘ ×‍×¢×¨×›×ھ\n"
     )
     if is_admin(update):
         text += (
-            "\n/admin     דוח אדמין\n"
+            "\n/admin     ×“×•×— ×گ×“×‍×™×ں\n"
             "/vars      Vars (SET/MISSING)\n"
             "/webhook   Webhook Info\n"
-            "/diag      דיאגנוסטיקה\n"
-            "/pingdb    בדיקת DB latency\n"
-            "/pingredis בדיקת Redis latency\n"
+            "/diag      ×“×™×گ×’× ×•×،×ک×™×§×”\n"
+            "/pingdb    ×‘×“×™×§×ھ DB latency\n"
+            "/pingredis ×‘×“×™×§×ھ Redis latency\n"
         )
     await update.message.reply_text(text, parse_mode="Markdown")
 
@@ -342,8 +342,7 @@ def main():
             drop_pending_updates=True,
         )
     else:
-        app.add_error_handler(_global_error_handler)
-        app.run_polling(drop_pending_updates=True)
+        raise RuntimeError("Polling disabled. Use webhook mode only.")
 
 if __name__ == "__main__":
     main()
