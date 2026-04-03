@@ -1,4 +1,11 @@
+﻿import logging
+
+app.add_handler(CommandHandler("token_info", with_latency("token_info", token_info_cmd)))
+app.add_handler(CommandHandler("onchain_balance", with_latency("onchain_balance", onchain_balance_cmd)))
 import logging
+
+import logging
+from bot.banner_anim import should_animate_banner, send_banner_animated
 logger = logging.getLogger(__name__)
 import os
 import time
@@ -22,7 +29,6 @@ from bot.economy_store import (
     upsert_referral, get_referrer,
 
 )
-
 
 START_TS = time.time()
 
@@ -68,7 +74,6 @@ except Exception:
 def _parse_amount(x: str) -> int:
     return int(str(x).strip())
 
-
 def with_latency(name: str, fn: Callable[[Update, ContextTypes.DEFAULT_TYPE], Awaitable[None]]):
     async def _wrap(update: Update, context: ContextTypes.DEFAULT_TYPE):
         t0 = time.perf_counter()
@@ -100,8 +105,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         pass
 
-    text = (
-        f"```\n{ASCII_BANNER.strip()}\n```\n"
+    footer = (
         "SLH Guardian Security + Ops Control\n\n"
         "Welcome to SLH Guardian.\n"
         "Infra monitoring, ops control, and SaaS-ready foundation.\n\n"
@@ -114,9 +118,17 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/admins    list admins (access-controlled)\n"
     )
 
+    footer_full = footer
+
+    text = "```\n" + ASCII_BANNER.strip() + "\n```\n" + footer_full
+
     if is_admin(update):
-        text += "\n/admin     admin report\n/vars      Vars (SET/MISSING)\n/webhook   Webhook Info\n/diag      diagnostics\n/pingdb    DB latency\n/pingredis Redis latency\n/snapshot  snapshot\n"
+        admin_tail = "\n/admin     admin report\n/vars      Vars (SET/MISSING)\n/webhook   Webhook Info\n/diag      diagnostics\n/pingdb    DB latency\n/pingredis Redis latency\n/snapshot  snapshot\n"
+        footer_full = footer + admin_tail
+        text = "```\n" + ASCII_BANNER.strip() + "\n```\n" + footer_full
+
     await update.message.reply_text(text, parse_mode="Markdown")
+
 async def whoami_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u = update.effective_user
     c = update.effective_chat
@@ -148,8 +160,6 @@ async def health_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines.append(f"webhook_url: {WEBHOOK_URL or 'MISSING'}")
     await update.message.reply_text("\n".join(lines))
 
-
-
 async def ref_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u = update.effective_user
     if not u:
@@ -165,8 +175,10 @@ async def my_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not u:
         await update.message.reply_text("No user.")
         return
+
     bal = await get_points_balance(int(u.id))
     reqs = await list_user_requests(int(u.id), limit=5)
+
     lines = [
         "MY",
         f"user_id: {u.id}",
@@ -174,11 +186,17 @@ async def my_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "",
         "Recent requests:",
     ]
+
     if not reqs:
         lines.append("(none)")
     else:
         for r in reqs:
-            lines.append(f"- #{r['id']} {r['kind']} {r['amount']} {r['currency']} [{r['status']}]")
+            rid = r.get("id")
+            kind = r.get("kind")
+            amt = r.get("amount")
+            st = r.get("status")
+            lines.append(f"- #{rid} {kind} {amt} ({st})")
+
     await update.message.reply_text("\n".join(lines))
 
 async def buy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -219,9 +237,7 @@ async def pending_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lines = ["PENDING REQUESTS:"]
     if not items:
         lines.append("(none)")
-    else:
-        for it in items:
-            lines.append(f"- #{it['id']} user={it['user_id']} {it['kind']} {it['amount']} {it['currency']} tx={it['tx_ref'] or '-'}")
+
     await update.message.reply_text("\n".join(lines))
 
 async def approve_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -266,8 +282,6 @@ async def reject_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     log_event(logging.INFO, "economy_request_decided", action="reject", request_id=rid, decided_by=int(update.effective_user.id))
     await update.message.reply_text(f"OK: rejected #{rid}")
 
-
-
 async def add_account_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u = update.effective_user
     if not u:
@@ -293,10 +307,6 @@ async def add_account_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if "=" in token:
             k,v = token.split("=",1)
             details[k.strip()] = v.strip()
-        else:
-            # free text goes into note
-            details.setdefault("note", "")
-            details["note"] = (details["note"] + " " + token).strip()
 
     acc_id = await add_account(int(u.id), acc_type, label, details)
     await update.message.reply_text(f"OK: account saved #{acc_id}")
@@ -306,9 +316,7 @@ async def prices_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lines = ["PRICES:"]
     if not plans:
         lines.append("(none)")
-    else:
-        for p in plans:
-            lines.append(f"- {p['code']}: {p['price_amount']} {p['price_currency']} ({'active' if p['is_active'] else 'inactive'})")
+
     await update.message.reply_text("\n".join(lines))
 
 async def set_price_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -341,7 +349,6 @@ async def trade_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kind = "buy_token" if side == "buy" else "sell_token"
     req_id = await create_payment_request(int(u.id), kind, amt, "SELHA", note=note)
     await update.message.reply_text(f"OK: trade request created #{req_id} ({kind}) [pending]")
-
 
 async def donate_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not DONATE_URL:
@@ -430,10 +437,6 @@ async def pingredis_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     dt = int((time.perf_counter() - t0) * 1000)
     await update.message.reply_text(f"Redis ping: {'OK' if ok else 'FAIL'} ({dt} ms){'' if not err else ' | ' + err}")
 
-
-
-
-
 async def snapshot_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
         await update.message.reply_text("Access denied.")
@@ -468,7 +471,6 @@ async def admin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("BOOT/ADMIN REPORT\n\n" + await runtime_report(full=True))
 
-
 async def grant_admin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update):
         await update.message.reply_text("Access denied.")
@@ -499,9 +501,7 @@ async def admins_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lines = ["ADMINS:"]
     if not admins:
         lines.append("(none)")
-    else:
-        for a in admins:
-            lines.append(f"- {a['user_id']} (by {a['granted_by']} at {a['granted_at']})")
+
     await update.message.reply_text("\n".join(lines))
 
 async def dm_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -546,7 +546,6 @@ async def post_init(app):
     if ADMIN_CHAT_ID:
         await app.bot.send_message(chat_id=int(ADMIN_CHAT_ID), text="BOOT/ADMIN REPORT\n\n" + await runtime_report(full=True))
 
-
     # Telegram official commands (autocomplete)
     try:
         await app.bot.set_my_commands([
@@ -580,6 +579,78 @@ def _safe_add_cmd(app, name: str, func, with_latency_fn):
     except Exception:
         logger.exception("safe_add_cmd failed for %s", name)
 
+
+# ------------------------------
+# On-chain (read-only) helpers
+# ------------------------------
+def _bsc_web3():
+    from web3 import Web3
+    rpc = os.getenv("BSC_RPC_URL") or "https://bsc-dataseed.binance.org/"
+    w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 20}))
+    if not w3.is_connected():
+        raise RuntimeError("BSC RPC not reachable")
+    return w3
+
+def _load_token_contract():
+    import json
+    from web3 import Web3
+    token = os.getenv("BSC_TOKEN_ADDRESS")
+    abi_path = os.getenv("BSC_ABI_PATH") or "bsc/abi/FullFeatureToken.json"
+    if not token:
+        raise RuntimeError("Missing BSC_TOKEN_ADDRESS")
+    if not abi_path or not os.path.exists(abi_path):
+        raise RuntimeError(f"Missing ABI file at {abi_path}")
+    w3 = _bsc_web3()
+    abi = json.load(open(abi_path, "r", encoding="utf-8"))
+    c = w3.eth.contract(address=Web3.to_checksum_address(token), abi=abi)
+    return w3, c
+
+async def token_info_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    /token_info -> show token metadata from BSC (read-only)
+    """
+    try:
+        _, c = _load_token_contract()
+        name = c.functions.name().call()
+        sym  = c.functions.symbol().call()
+        dec  = c.functions.decimals().call()
+        total = c.functions.totalSupply().call()
+
+        token_addr = os.getenv("BSC_TOKEN_ADDRESS")
+        msg = (
+            "TOKEN INFO (BSC)\n"
+            f"name: {name}\n"
+            f"symbol: {sym}\n"
+            f"decimals: {dec}\n"
+            f"totalSupply(raw): {total}\n"
+            f"contract: {token_addr}"
+        )
+        await update.effective_message.reply_text(msg)
+    except Exception as e:
+        await update.effective_message.reply_text(f"token_info error: {type(e).__name__}: {e}")
+
+async def onchain_balance_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    /onchain_balance <0xAddress> -> show ERC20 balanceOf on BSC (read-only)
+    """
+    try:
+        if not context.args or len(context.args) < 1:
+            await update.effective_message.reply_text("Usage: /onchain_balance <0xAddress>")
+            return
+        addr = str(context.args[0]).strip()
+        w3, c = _load_token_contract()
+        dec = c.functions.decimals().call()
+        bal = c.functions.balanceOf(w3.to_checksum_address(addr)).call()
+        msg = (
+            "ONCHAIN BALANCE (BSC)\n"
+            f"address: {addr}\n"
+            f"balance(raw): {bal}\n"
+            f"balance: {bal / (10 ** dec)}"
+        )
+        await update.effective_message.reply_text(msg)
+    except Exception as e:
+        await update.effective_message.reply_text(f"onchain_balance error: {type(e).__name__}: {e}")
+
 async def points_cmd(update, context):
     """
     /points -> show internal wallet balance for current Telegram user.
@@ -601,7 +672,6 @@ async def points_cmd(update, context):
                 await m.reply_text(f"points error: {type(e).__name__}")
         except Exception:
             pass
-
 
 async def credit_points_cmd(update, context):
     """
@@ -644,6 +714,60 @@ async def credit_points_cmd(update, context):
                 await m.reply_text(f"credit_points error: {type(e).__name__}")
         except Exception:
             pass
+
+async def bsc_token_cmd(update, context):
+    """
+    /bsc_token -> token metadata from BSC (admin only for now)
+    """
+    try:
+        if not is_admin(update):
+            m = getattr(update, "effective_message", None)
+            if m is not None:
+                await m.reply_text("Not authorized.")
+            return
+
+        from bsc.token import token_meta
+        meta = token_meta()
+        import json
+        m = getattr(update, "effective_message", None)
+        if m is not None:
+            await m.reply_text(json.dumps(meta, ensure_ascii=False, indent=2))
+    except Exception as e:
+        logger.exception("bsc_token_cmd failed")
+        m = getattr(update, "effective_message", None)
+        if m is not None:
+            await m.reply_text(f"bsc_token error: {type(e).__name__}")
+
+async def bsc_balance_cmd(update, context):
+    """
+    /bsc_balance <address>
+    """
+    try:
+        if not is_admin(update):
+            m = getattr(update, "effective_message", None)
+            if m is not None:
+                await m.reply_text("Not authorized.")
+            return
+
+        args = getattr(context, "args", []) or []
+        if len(args) < 1:
+            m = getattr(update, "effective_message", None)
+            if m is not None:
+                await m.reply_text("Usage: /bsc_balance <address>")
+            return
+
+        addr = str(args[0]).strip()
+        from bsc.token import balance_of
+        bal = balance_of(addr)
+        import json
+        m = getattr(update, "effective_message", None)
+        if m is not None:
+            await m.reply_text(json.dumps(bal, ensure_ascii=False, indent=2))
+    except Exception as e:
+        logger.exception("bsc_balance_cmd failed")
+        m = getattr(update, "effective_message", None)
+        if m is not None:
+            await m.reply_text(f"bsc_balance error: {type(e).__name__}")
 
 def build_application():
     if not BOT_TOKEN:
@@ -714,6 +838,8 @@ async def readyz_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     except Exception as e:
         payload = {"ok": False, "error": str(e), "elapsed_ms": int((time.perf_counter() - t0) * 1000)}
     await update.effective_message.reply_text(json.dumps(payload, ensure_ascii=False))
+
+
 
 
 

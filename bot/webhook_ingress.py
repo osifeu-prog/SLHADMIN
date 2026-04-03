@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import logging
 import os
 from typing import Any, Dict, Optional
@@ -19,7 +19,7 @@ _tg_app: Optional[Application] = None
 
 @app.on_event("startup")
 async def _startup() -> None:
-    await init_infrastructure(wait=True)
+    await init_infrastructure(wait=False)
 
     global _tg_app
     _tg_app = build_application()

@@ -14,6 +14,46 @@ export default {
     if (request.method === "GET" && url.pathname === "/healthz") return await handleHealthz(env);
     if (request.method === "GET" && url.pathname === "/readyz") return await handleReadyz(env);
 
+    if (request.method === "POST" && url.pathname === "/diag_echo") {
+      const update = await request.json();
+      const msg = (update && (update.message || update.edited_message)) || null;
+      const text = msg ? (msg.text || "") : "";
+      const keys = Object.keys(update || {});
+      return new Response(JSON.stringify({ ok: true, has_message: !!msg, keys, text: text.slice(0, 200) }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+
+    if (request.method === "GET" && url.pathname === "/diag_secrets") {
+      const hasBot = !!((env.BOT_TOKEN || "").toString().trim());
+      const hasSecret = !!((env.TG_SECRET_TOKEN || "").toString().trim());
+      const hasAdmin = !!((env.ADMIN_CHAT_ID || "").toString().trim());
+      return new Response(JSON.stringify({ ok: true, hasBot, hasSecret, hasAdmin }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    if (request.method === "POST" && url.pathname === "/diag_ping_tg") {
+      const admin = Number((env.ADMIN_CHAT_ID || "").toString().trim() || "0");
+      if (!admin) return new Response("admin missing", { status: 500 });
+
+      const text = "diag_ping_tg ok " + new Date().toISOString();
+      const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chat_id: admin, text }),
+      });
+      const t = await r.text();
+      return new Response(JSON.stringify({ ok: r.ok, status: r.status, body: t.slice(0, 400) }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+
     if (url.pathname !== "/tg/webhook") return new Response("not found", { status: 404 });
     if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
 

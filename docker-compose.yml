@@ -5,7 +5,7 @@
     container_name: guardian-api
     env_file: .env
     ports:
-      - "8001:8000"
+      - "8001:8080"
     depends_on:
       guardian-db:
         condition: service_healthy
@@ -36,3 +36,9 @@
       timeout: 3s
       retries: 30
     restart: always
+
+
+
+volumes:
+  guardian_db_data:
+

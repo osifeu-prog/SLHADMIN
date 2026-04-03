@@ -1,4 +1,5 @@
-﻿import logging
+import logging
+logger = logging.getLogger("guardian_api")
 import os
 import time
 from contextlib import asynccontextmanager
@@ -35,7 +36,7 @@ async def lifespan(_app: FastAPI):
         await init_infrastructure(wait=True)
     except Exception as e:
         logging.getLogger(__name__).error(
-            "infra init failed (startup continues): %s: %s", type(e).__name__, e
+            "infra init failed (startup continues): %s: %s", type(e).__name__, e, exc_info=True
         )
 
     # Migrations (safe)
@@ -69,18 +70,20 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+
+@app.on_event("startup")
+async def _startup():
+    # init DB/Redis session factory + health checks
+    from bot.infrastructure import init_infrastructure, run_migrations_safe
+    await init_infrastructure(wait=True)
+    await run_migrations_safe()
 @app.get("/")
 async def root():
     return {"ok": True, "service": "guardian", "uptime_s": uptime_s()}
 
-
 @app.get("/healthz")
 async def healthz():
-    return {
-        "ok": True,
-        "uptime_s": uptime_s(),
-        "git_sha": (git_sha()[:12] if git_sha() else None),
-    }
+    return {"ok": True}
 
 @app.get("/health")
 async def health():
@@ -125,12 +128,12 @@ async def tg_webhook(
         return JSONResponse({"ok": False, "error": "PTB_DISABLED"}, status_code=503)
 
     payload = await request.json()
-    update = Update.de_json(payload, ptb_app.bot)
-    await ptb_app.process_update(update)
-    return {"ok": True}
-
-
-# Optional Prometheus metrics (best-effort)
+    try:
+        update = Update.de_json(payload, ptb_app.bot)
+        await ptb_app.process_update(update)
+    except Exception:
+        logger.exception("process_update failed")
+    return {"ok": True}# Optional Prometheus metrics (best-effort)
 try:
     from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
@@ -140,3 +143,15 @@ try:
 
 except Exception:
     pass
+
+
+
+
+
+
+
+@app.get("/healthz2")
+async def healthz2():
+    return {"ok": True}
+
+
