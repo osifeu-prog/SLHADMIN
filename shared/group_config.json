@@ -1,0 +1,15 @@
+{
+  "groups": {
+    "botshop": {"name": "SLH BotShop Premium", "invite_link": "https://t.me/+Hl1TEpkVLws2MTQ8", "price_ils": 99, "price_ton": 5.0},
+    "wallet": {"name": "SLH Wallet VIP", "invite_link": "https://t.me/+trsYaT1UVI8yY2Y0", "price_ils": 79, "price_ton": 4.0},
+    "factory": {"name": "SLH Factory Investors", "invite_link": "https://t.me/+yWzrEaA41rRhNjVk", "price_ils": 149, "price_ton": 7.5},
+    "academia": {"name": "SLH Academia Members", "invite_link": "https://t.me/+JSGStjREEs43MzZk", "price_ils": 41, "price_ton": 2.0},
+    "guardian": {"name": "SLH Guardian Ops", "invite_link": "https://t.me/+_l9XZ77Bbb5kZTM0", "price_ils": 59, "price_ton": 3.0},
+    "community": {"name": "SLH Community PRO", "invite_link": "https://t.me/+e8GeOmh0CD82ZmI0", "price_ils": 41, "price_ton": 2.0},
+    "system_bus": {"name": "SLH System Bus", "invite_link": "https://t.me/+qon4jktYobA3Mjlk", "admin_only": true}
+  },
+  "payment": {
+    "ton_wallet": "UQCr743gEr_nqV_0SBkSp3CtYS_15R3LDLBvLmKeEv7XdGvp",
+    "method": "TON only"
+  }
+}
