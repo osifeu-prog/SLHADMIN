@@ -107,15 +107,15 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     footer = (
         "SLH Guardian Security + Ops Control\n\n"
-        "Welcome to SLH Guardian.\n"
-        "Infra monitoring, ops control, and SaaS-ready foundation.\n\n"
+        "\u05d1\u05e8\u05d5\u05da \u05d4\u05d1\u05d0 \u05dc-SLH Guardian.\n"
+        "\u05de\u05e2\u05e8\u05db\u05ea \u05dc\u05e0\u05d9\u05d8\u05d5\u05e8 \u05ea\u05e9\u05ea\u05d9\u05d5\u05ea, \u05d2\u05d9\u05d1\u05d5\u05d9, \u05e0\u05d9\u05d4\u05d5\u05dc \u05ea\u05e4\u05e2\u05d5\u05dc, \u05d5\u05d4\u05db\u05e0\u05d4 \u05dc-SaaS \u05de\u05dc\u05d0.\n\n"
         "Commands:\n"
-        "/status    DB/Redis/Alembic status\n"
-        "/menu      menu\n"
-        "/whoami    who am I\n"
-        "/health    system health\n"
-        "/donate    support / donate\n"
-        "/admins    list admins (access-controlled)\n"
+        "/status    \u05e1\u05d8\u05d8\u05d5\u05e1 DB/Redis/Alembic\n"
+        "/menu      \u05ea\u05e4\u05e8\u05d9\u05d8\n"
+        "/whoami    \u05de\u05d9 \u05d0\u05e0\u05d9\n"
+        "/health    \u05de\u05e6\u05d1 \u05de\u05e2\u05e8\u05db\u05ea\n"
+        "/support   \U0001f6ce\ufe0f \u05d1\u05e7\u05e9 \u05ea\u05de\u05d9\u05db\u05d4 \u05de\u05e8\u05d7\u05d5\u05e7\n"
+        "/donate    \u05ea\u05de\u05d9\u05db\u05d4 / \u05ea\u05e8\u05d5\u05de\u05d4\n"
     )
 
     footer_full = footer
@@ -123,7 +123,20 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "```\n" + ASCII_BANNER.strip() + "\n```\n" + footer_full
 
     if is_admin(update):
-        admin_tail = "\n/admin     admin report\n/vars      Vars (SET/MISSING)\n/webhook   Webhook Info\n/diag      diagnostics\n/pingdb    DB latency\n/pingredis Redis latency\n/snapshot  snapshot\n"
+        admin_tail = (
+            "\n/admin     admin report\n/vars      Vars (SET/MISSING)\n/webhook   Webhook Info\n/diag      diagnostics\n/pingdb    DB latency\n/pingredis Redis latency\n/snapshot  snapshot\n"
+            "\n\U0001f6ce\ufe0f Remote Support:\n"
+            "/queue     pending requests\n"
+            "/connect   start session\n"
+            "/say       send message\n"
+            "/guide     send guide step\n"
+            "/checklist send checklist\n"
+            "/screenshot request screenshot\n"
+            "/sysinfo   request system info\n"
+            "/quickfix  send fix template\n"
+            "/sessions  active sessions\n"
+            "/disconnect end session\n"
+        )
         footer_full = footer + admin_tail
         text = "```\n" + ASCII_BANNER.strip() + "\n```\n" + footer_full
 
@@ -769,6 +782,332 @@ async def bsc_balance_cmd(update, context):
         if m is not None:
             await m.reply_text(f"bsc_balance error: {type(e).__name__}")
 
+# ============================================================
+# REMOTE SUPPORT MODULE — TeamViewer-like customer assistance
+# ============================================================
+# Active support sessions: {client_chat_id: {admin_id, started, notes, steps}}
+_support_sessions = {}
+_support_queue = []  # Waiting clients: [{chat_id, username, issue, ts}]
+
+async def support_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Client: /support <issue> — request remote help from admin"""
+    args = context.args or []
+    issue = " ".join(args) if args else "General help needed"
+    uid = update.effective_user.id
+    uname = update.effective_user.username or str(uid)
+
+    # Add to queue
+    import time as _t
+    entry = {"chat_id": uid, "username": uname, "issue": issue, "ts": _t.time()}
+    # Remove existing entry for same user
+    _support_queue[:] = [q for q in _support_queue if q["chat_id"] != uid]
+    _support_queue.append(entry)
+
+    await update.effective_message.reply_text(
+        f"\U0001f6ce\ufe0f \u05d1\u05e7\u05e9\u05ea \u05ea\u05de\u05d9\u05db\u05d4 \u05e0\u05e9\u05dc\u05d7\u05d4!\n"
+        f"\u05d1\u05e2\u05d9\u05d4: {issue}\n"
+        f"\u05de\u05d7\u05db\u05d4 \u05dc\u05ea\u05e9\u05d5\u05d1\u05d4 \u05de\u05d4\u05ea\u05de\u05d9\u05db\u05d4...\n\n"
+        f"\U0001f6ce\ufe0f Support request sent!\n"
+        f"Issue: {issue}\n"
+        f"Waiting for admin response..."
+    )
+
+    # Notify admin
+    if ADMIN_CHAT_ID:
+        try:
+            await context.bot.send_message(
+                chat_id=int(ADMIN_CHAT_ID),
+                text=f"\U0001f6a8 NEW SUPPORT REQUEST\n"
+                     f"User: @{uname} ({uid})\n"
+                     f"Issue: {issue}\n\n"
+                     f"Use /connect {uid} to start session\n"
+                     f"Use /queue to see all pending requests"
+            )
+        except Exception:
+            pass
+
+async def queue_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /queue — show pending support requests"""
+    if not is_admin(update):
+        await update.effective_message.reply_text("\u26d4 Admin only")
+        return
+    if not _support_queue:
+        await update.effective_message.reply_text("\u2705 No pending support requests")
+        return
+    import time as _t
+    lines = ["\U0001f4cb SUPPORT QUEUE:"]
+    for i, q in enumerate(_support_queue, 1):
+        age = int(_t.time() - q["ts"])
+        age_str = f"{age//60}m" if age > 60 else f"{age}s"
+        lines.append(f"{i}. @{q['username']} ({q['chat_id']}) — {q['issue']} [{age_str} ago]")
+    lines.append(f"\nUse /connect <user_id> to start session")
+    await update.effective_message.reply_text("\n".join(lines))
+
+async def connect_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /connect <user_id> — start remote support session"""
+    if not is_admin(update):
+        await update.effective_message.reply_text("\u26d4 Admin only")
+        return
+    args = context.args or []
+    if not args:
+        await update.effective_message.reply_text("Usage: /connect <user_id>")
+        return
+    import time as _t
+    client_id = int(args[0])
+    _support_sessions[client_id] = {
+        "admin_id": update.effective_user.id,
+        "started": _t.time(),
+        "notes": [],
+        "steps": []
+    }
+    # Remove from queue
+    _support_queue[:] = [q for q in _support_queue if q["chat_id"] != client_id]
+
+    await update.effective_message.reply_text(
+        f"\U0001f50c SESSION STARTED with {client_id}\n\n"
+        f"Commands:\n"
+        f"/say {client_id} <msg> \u2014 Send message to client\n"
+        f"/guide {client_id} <step> \u2014 Send numbered step\n"
+        f"/checklist {client_id} <items> \u2014 Send troubleshooting checklist\n"
+        f"/screenshot {client_id} \u2014 Request screenshot from client\n"
+        f"/sysinfo {client_id} \u2014 Request system info\n"
+        f"/note {client_id} <note> \u2014 Add internal note\n"
+        f"/disconnect {client_id} \u2014 End session\n"
+        f"/sessions \u2014 View active sessions"
+    )
+
+    try:
+        await context.bot.send_message(
+            chat_id=client_id,
+            text="\U0001f50c \u05d4\u05ea\u05d7\u05d1\u05e8\u05ea \u05dc\u05e1\u05e9\u05df \u05ea\u05de\u05d9\u05db\u05d4 \u05de\u05e8\u05d7\u05d5\u05e7!\n"
+                 "\U0001f50c Connected to remote support session!\n\n"
+                 "\u05d4\u05d8\u05db\u05e0\u05d0\u05d9 \u05e9\u05dc\u05e0\u05d5 \u05de\u05d7\u05d5\u05d1\u05e8 \u05d5\u05d9\u05e1\u05d9\u05d9\u05e2 \u05dc\u05da.\n"
+                 "Our technician is connected and will assist you.\n\n"
+                 "\u05ea\u05d5\u05db\u05dc \u05dc\u05e9\u05dc\u05d5\u05d7 \u05d4\u05d5\u05d3\u05e2\u05d5\u05ea, \u05e6\u05d9\u05dc\u05d5\u05de\u05d9 \u05de\u05e1\u05da \u05d5\u05ea\u05de\u05d5\u05e0\u05d5\u05ea.\n"
+                 "You can send messages, screenshots, and photos."
+        )
+    except Exception as e:
+        await update.effective_message.reply_text(f"\u26a0\ufe0f Could not reach user {client_id}: {e}")
+
+async def say_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /say <user_id> <message> — send message to client"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if len(args) < 2:
+        await update.effective_message.reply_text("Usage: /say <user_id> <message>")
+        return
+    client_id = int(args[0])
+    msg = " ".join(args[1:])
+    try:
+        await context.bot.send_message(
+            chat_id=client_id,
+            text=f"\U0001f9d1\u200d\U0001f4bb \u05d8\u05db\u05e0\u05d0\u05d9 SLH:\n{msg}"
+        )
+        await update.effective_message.reply_text(f"\u2705 Sent to {client_id}")
+    except Exception as e:
+        await update.effective_message.reply_text(f"\u274c Failed: {e}")
+
+async def guide_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /guide <user_id> <step instructions> — send numbered guide step"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if len(args) < 2:
+        await update.effective_message.reply_text("Usage: /guide <user_id> <step description>")
+        return
+    client_id = int(args[0])
+    step_text = " ".join(args[1:])
+    session = _support_sessions.get(client_id, {"steps": []})
+    session.setdefault("steps", []).append(step_text)
+    step_num = len(session["steps"])
+    try:
+        await context.bot.send_message(
+            chat_id=client_id,
+            text=f"\U0001f4cb \u05e9\u05dc\u05d1 {step_num}:\n{step_text}\n\nStep {step_num}:\n{step_text}"
+        )
+        await update.effective_message.reply_text(f"\u2705 Step {step_num} sent to {client_id}")
+    except Exception as e:
+        await update.effective_message.reply_text(f"\u274c Failed: {e}")
+
+async def checklist_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /checklist <user_id> <item1 | item2 | item3> — send troubleshooting checklist"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if len(args) < 2:
+        await update.effective_message.reply_text("Usage: /checklist <user_id> item1 | item2 | item3")
+        return
+    client_id = int(args[0])
+    items_raw = " ".join(args[1:])
+    items = [i.strip() for i in items_raw.split("|") if i.strip()]
+    checklist = "\n".join([f"\u2610 {i}" for i in items])
+    try:
+        await context.bot.send_message(
+            chat_id=client_id,
+            text=f"\U0001f4dd \u05e8\u05e9\u05d9\u05de\u05ea \u05d1\u05d3\u05d9\u05e7\u05d4 / Troubleshooting Checklist:\n\n{checklist}\n\n\u05e1\u05de\u05df \u05db\u05dc \u05e4\u05e8\u05d9\u05d8 \u05e9\u05d1\u05d3\u05e7\u05ea \u05d1-\u2705 / Mark done items with \u2705"
+        )
+        await update.effective_message.reply_text(f"\u2705 Checklist ({len(items)} items) sent to {client_id}")
+    except Exception as e:
+        await update.effective_message.reply_text(f"\u274c Failed: {e}")
+
+async def screenshot_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /screenshot <user_id> — request screenshot from client"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if not args:
+        await update.effective_message.reply_text("Usage: /screenshot <user_id>")
+        return
+    client_id = int(args[0])
+    try:
+        await context.bot.send_message(
+            chat_id=client_id,
+            text="\U0001f4f8 \u05d4\u05d8\u05db\u05e0\u05d0\u05d9 \u05de\u05d1\u05e7\u05e9 \u05e6\u05d9\u05dc\u05d5\u05dd \u05de\u05e1\u05da\n"
+                 "\U0001f4f8 The technician requests a screenshot\n\n"
+                 "\u05d0\u05e0\u05d0 \u05e6\u05dc\u05dd \u05e6\u05d9\u05dc\u05d5\u05dd \u05de\u05e1\u05da \u05d5\u05e9\u05dc\u05d7 \u05db\u05d0\u05df \u05db\u05ea\u05de\u05d5\u05e0\u05d4.\n"
+                 "Please take a screenshot and send it here as a photo.\n\n"
+                 "Windows: Win+Shift+S\nMac: Cmd+Shift+4"
+        )
+        await update.effective_message.reply_text(f"\u2705 Screenshot request sent to {client_id}")
+    except Exception as e:
+        await update.effective_message.reply_text(f"\u274c Failed: {e}")
+
+async def sysinfo_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /sysinfo <user_id> — request system info from client"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if not args:
+        await update.effective_message.reply_text("Usage: /sysinfo <user_id>")
+        return
+    client_id = int(args[0])
+    try:
+        await context.bot.send_message(
+            chat_id=client_id,
+            text="\U0001f4bb \u05d4\u05d8\u05db\u05e0\u05d0\u05d9 \u05de\u05d1\u05e7\u05e9 \u05e4\u05e8\u05d8\u05d9 \u05de\u05e2\u05e8\u05db\u05ea\n"
+                 "\U0001f4bb System info requested\n\n"
+                 "\u05d0\u05e0\u05d0 \u05e4\u05ea\u05d7 CMD (\u05e9\u05d5\u05e8\u05ea \u05e4\u05e7\u05d5\u05d3\u05d4) \u05d5\u05d4\u05e8\u05e5:\n"
+                 "Please open CMD (Command Prompt) and run:\n\n"
+                 "`systeminfo | findstr /B /C:\"OS\" /C:\"System\" /C:\"Total Physical\"`\n\n"
+                 "\u05d5\u05d2\u05dd / and also:\n"
+                 "`ipconfig /all | findstr /i \"IPv4 DNS Default\"`\n\n"
+                 "\u05d4\u05e2\u05ea\u05e7 \u05d0\u05ea \u05d4\u05ea\u05d5\u05e6\u05d0\u05d4 \u05db\u05d0\u05df / Paste the output here",
+            parse_mode="Markdown"
+        )
+        await update.effective_message.reply_text(f"\u2705 System info request sent to {client_id}")
+    except Exception as e:
+        await update.effective_message.reply_text(f"\u274c Failed: {e}")
+
+async def note_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /note <user_id> <note> — add internal note to session"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if len(args) < 2:
+        await update.effective_message.reply_text("Usage: /note <user_id> <note text>")
+        return
+    client_id = int(args[0])
+    note = " ".join(args[1:])
+    session = _support_sessions.get(client_id)
+    if not session:
+        await update.effective_message.reply_text(f"\u26a0\ufe0f No active session for {client_id}")
+        return
+    import time as _t
+    session["notes"].append({"text": note, "ts": _t.time()})
+    await update.effective_message.reply_text(f"\U0001f4dd Note saved ({len(session['notes'])} total)")
+
+async def disconnect_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /disconnect <user_id> — end support session"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if not args:
+        await update.effective_message.reply_text("Usage: /disconnect <user_id>")
+        return
+    client_id = int(args[0])
+    session = _support_sessions.pop(client_id, None)
+    if not session:
+        await update.effective_message.reply_text(f"No active session for {client_id}")
+        return
+    import time as _t
+    duration = int(_t.time() - session.get("started", _t.time()))
+    dur_str = f"{duration//60}m {duration%60}s"
+
+    try:
+        await context.bot.send_message(
+            chat_id=client_id,
+            text="\u2705 \u05d4\u05e1\u05e9\u05df \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd. \u05ea\u05d5\u05d3\u05d4 \u05e9\u05e4\u05e0\u05d9\u05ea \u05dc\u05e9\u05d9\u05e8\u05d5\u05ea SLH!\n"
+                 "\u2705 Session ended. Thank you for using SLH support!\n\n"
+                 "\u05d0\u05dd \u05e0\u05d3\u05e8\u05e9\u05ea \u05e2\u05d6\u05e8\u05d4 \u05e0\u05d5\u05e1\u05e4\u05ea, \u05e9\u05dc\u05d7 /support\n"
+                 "Need more help? Send /support"
+        )
+    except Exception:
+        pass
+
+    summary = (
+        f"\U0001f50c SESSION CLOSED\n"
+        f"Client: {client_id}\n"
+        f"Duration: {dur_str}\n"
+        f"Steps sent: {len(session.get('steps', []))}\n"
+        f"Notes: {len(session.get('notes', []))}"
+    )
+    await update.effective_message.reply_text(summary)
+
+async def sessions_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /sessions — list active support sessions"""
+    if not is_admin(update):
+        return
+    if not _support_sessions:
+        await update.effective_message.reply_text("\u2705 No active support sessions")
+        return
+    import time as _t
+    lines = ["\U0001f50c ACTIVE SESSIONS:"]
+    for cid, s in _support_sessions.items():
+        dur = int(_t.time() - s.get("started", _t.time()))
+        dur_str = f"{dur//60}m"
+        lines.append(f"\u2022 {cid} \u2014 {dur_str} \u2014 {len(s.get('steps',[]))} steps, {len(s.get('notes',[]))} notes")
+    lines.append(f"\nQueue: {len(_support_queue)} waiting")
+    await update.effective_message.reply_text("\n".join(lines))
+
+async def quickfix_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin: /quickfix <user_id> <template> — send pre-built fix templates"""
+    if not is_admin(update):
+        return
+    args = context.args or []
+    if len(args) < 2:
+        templates = (
+            "\U0001f527 QUICKFIX TEMPLATES:\n\n"
+            "/quickfix <uid> restart \u2014 Restart instructions\n"
+            "/quickfix <uid> cache \u2014 Clear cache/cookies\n"
+            "/quickfix <uid> dns \u2014 Flush DNS\n"
+            "/quickfix <uid> network \u2014 Network reset\n"
+            "/quickfix <uid> update \u2014 Update software\n"
+            "/quickfix <uid> safe \u2014 Safe mode boot\n"
+            "/quickfix <uid> disk \u2014 Disk cleanup"
+        )
+        await update.effective_message.reply_text(templates)
+        return
+
+    client_id = int(args[0])
+    template = args[1].lower()
+    fixes = {
+        "restart": "\U0001f504 \u05d4\u05e4\u05e2\u05dc\u05d4 \u05de\u05d7\u05d3\u05e9 / Restart:\n\n1. \u05e9\u05de\u05d5\u05e8 \u05d0\u05ea \u05db\u05dc \u05d4\u05e2\u05d1\u05d5\u05d3\u05d4\n   Save all work\n2. \u05dc\u05d7\u05e5 Start > Power > Restart\n   Click Start > Power > Restart\n3. \u05d4\u05de\u05ea\u05df \u05dc\u05d0\u05ea\u05d7\u05d5\u05dc \u05de\u05d7\u05d3\u05e9\n   Wait for full reboot\n4. \u05d1\u05d3\u05d5\u05e7 \u05d0\u05dd \u05d4\u05d1\u05e2\u05d9\u05d4 \u05e0\u05e4\u05ea\u05e8\u05d4\n   Check if the issue is resolved",
+        "cache": "\U0001f9f9 \u05e0\u05d9\u05e7\u05d5\u05d9 \u05de\u05d8\u05de\u05d5\u05df / Clear Cache:\n\n\u05d1\u05d3\u05e4\u05d3\u05e4\u05df / In browser:\n1. \u05dc\u05d7\u05e5 Ctrl+Shift+Delete\n2. \u05e1\u05de\u05df \u05d4\u05db\u05dc / Select all\n3. \u05dc\u05d7\u05e5 Clear / \u05e0\u05e7\u05d4\n4. \u05e1\u05d2\u05d5\u05e8 \u05d0\u05ea \u05d4\u05d3\u05e4\u05d3\u05e4\u05df \u05d5\u05e4\u05ea\u05d7 \u05de\u05d7\u05d3\u05e9\n   Close browser and reopen",
+        "dns": "\U0001f310 \u05e0\u05d9\u05e7\u05d5\u05d9 DNS / Flush DNS:\n\n1. \u05e4\u05ea\u05d7 CMD \u05db\u05de\u05e0\u05d4\u05dc / Open CMD as admin\n2. \u05d4\u05e8\u05e5 / Run:\n`ipconfig /flushdns`\n3. \u05d5\u05d2\u05dd / Also:\n`ipconfig /release`\n`ipconfig /renew`\n4. \u05d1\u05d3\u05d5\u05e7 \u05d7\u05d9\u05d1\u05d5\u05e8 / Check connection",
+        "network": "\U0001f4e1 \u05d0\u05d9\u05e4\u05d5\u05e1 \u05e8\u05e9\u05ea / Network Reset:\n\n1. \u05e4\u05ea\u05d7 CMD \u05db\u05de\u05e0\u05d4\u05dc / Open CMD as admin\n2. \u05d4\u05e8\u05e5 / Run:\n`netsh winsock reset`\n`netsh int ip reset`\n3. \u05d4\u05e4\u05e2\u05dc \u05de\u05d7\u05d3\u05e9 / Restart PC\n4. \u05d7\u05d1\u05e8 \u05de\u05d7\u05d3\u05e9 \u05dc-WiFi / Reconnect WiFi",
+        "update": "\U0001f4e6 \u05e2\u05d3\u05db\u05d5\u05e0\u05d9\u05dd / Updates:\n\n1. \u05e4\u05ea\u05d7 Settings > Update & Security\n2. \u05dc\u05d7\u05e5 Check for updates\n3. \u05d4\u05ea\u05e7\u05df \u05d4\u05db\u05dc / Install all\n4. \u05d4\u05e4\u05e2\u05dc \u05de\u05d7\u05d3\u05e9 \u05d0\u05dd \u05e0\u05d3\u05e8\u05e9 / Restart if needed",
+        "safe": "\U0001f6e1\ufe0f \u05de\u05e6\u05d1 \u05d1\u05d8\u05d5\u05d7 / Safe Mode:\n\n1. \u05d4\u05e4\u05e2\u05dc \u05d0\u05ea \u05d4\u05de\u05d7\u05e9\u05d1 / Restart PC\n2. \u05dc\u05d7\u05e5 F8 \u05d1\u05d6\u05de\u05df \u05d4\u05d0\u05ea\u05d7\u05d5\u05dc\n   Press F8 during boot\n3. \u05d1\u05d7\u05e8 Safe Mode with Networking\n4. \u05d1\u05d3\u05d5\u05e7 \u05d0\u05ea \u05d4\u05d1\u05e2\u05d9\u05d4 / Test the issue\n\nWindows 10/11:\nSettings > Recovery > Restart now > Troubleshoot > Advanced > Startup Settings > Restart > F5",
+        "disk": "\U0001f4be \u05e0\u05d9\u05e7\u05d5\u05d9 \u05d3\u05d9\u05e1\u05e7 / Disk Cleanup:\n\n1. \u05e4\u05ea\u05d7 / Open: cleanmgr\n2. \u05d1\u05d7\u05e8 \u05d3\u05d9\u05e1\u05e7 C: / Select C:\n3. \u05e1\u05de\u05df \u05d4\u05db\u05dc / Select all\n4. \u05dc\u05d7\u05e5 Clean up system files\n5. \u05e1\u05de\u05df \u05d4\u05db\u05dc \u05d5\u05d0\u05e9\u05e8 / Confirm & delete"
+    }
+    fix_text = fixes.get(template, f"\u26a0\ufe0f Unknown template: {template}")
+    try:
+        await context.bot.send_message(chat_id=client_id, text=fix_text, parse_mode="Markdown")
+        await update.effective_message.reply_text(f"\u2705 Quickfix '{template}' sent to {client_id}")
+    except Exception as e:
+        await update.effective_message.reply_text(f"\u274c Failed: {e}")
+
+
 def build_application():
     if not BOT_TOKEN:
         raise ValueError("BOT_TOKEN not set")
@@ -809,6 +1148,27 @@ def build_application():
     app.add_handler(CommandHandler("prices", with_latency("prices", prices_cmd)))
     app.add_handler(CommandHandler("set_price", with_latency("set_price", set_price_cmd)))
     app.add_handler(CommandHandler("trade", with_latency("trade", trade_cmd)))
+
+    # === Remote Support commands ===
+    app.add_handler(CommandHandler("support", with_latency("support", support_cmd)))
+    app.add_handler(CommandHandler("queue", with_latency("queue", queue_cmd)))
+    app.add_handler(CommandHandler("connect", with_latency("connect", connect_cmd)))
+    app.add_handler(CommandHandler("say", with_latency("say", say_cmd)))
+    app.add_handler(CommandHandler("guide", with_latency("guide", guide_cmd)))
+    app.add_handler(CommandHandler("checklist", with_latency("checklist", checklist_cmd)))
+    app.add_handler(CommandHandler("screenshot", with_latency("screenshot", screenshot_cmd)))
+    app.add_handler(CommandHandler("sysinfo", with_latency("sysinfo", sysinfo_cmd)))
+    app.add_handler(CommandHandler("note", with_latency("note", note_cmd)))
+    app.add_handler(CommandHandler("disconnect", with_latency("disconnect", disconnect_cmd)))
+    app.add_handler(CommandHandler("sessions", with_latency("sessions", sessions_cmd)))
+    app.add_handler(CommandHandler("quickfix", with_latency("quickfix", quickfix_cmd)))
+
+    # === Bot Manager commands ===
+    try:
+        from bot.bot_manager import register_bot_manager
+        register_bot_manager(app, with_latency)
+    except Exception as e:
+        logging.warning(f"[BotManager] Failed to register: {e}")
 
     return app
 
