@@ -951,6 +951,60 @@ async def checklist_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.effective_message.reply_text(f"\u274c Failed: {e}")
 
+async def _support_relay_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Relay photos/documents from client to admin if session is active."""
+    msg = update.effective_message
+    if not msg or not update.effective_user:
+        return
+    client_id = update.effective_user.id
+    session = _support_sessions.get(client_id)
+    if not session:
+        return  # no active session — ignore
+    admin_id = session.get("admin_id") or session.get("operator_id")
+    if not admin_id:
+        return
+    try:
+        username = update.effective_user.username or "ללא"
+        caption = f"📷 Screenshot from @{username} ({client_id})"
+        if msg.photo:
+            await context.bot.send_photo(
+                chat_id=admin_id,
+                photo=msg.photo[-1].file_id,
+                caption=caption
+            )
+        elif msg.document:
+            await context.bot.send_document(
+                chat_id=admin_id,
+                document=msg.document.file_id,
+                caption=caption
+            )
+        await msg.reply_text("✅ התמונה הועברה לטכנאי. אנא המתן לתגובה.")
+    except Exception as e:
+        logging.warning(f"[support_relay] media failed: {e}")
+
+
+async def _support_relay_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Relay text messages from client to admin if session is active."""
+    msg = update.effective_message
+    if not msg or not update.effective_user or not msg.text:
+        return
+    client_id = update.effective_user.id
+    session = _support_sessions.get(client_id)
+    if not session:
+        return
+    admin_id = session.get("admin_id") or session.get("operator_id")
+    if not admin_id:
+        return
+    try:
+        username = update.effective_user.username or "ללא"
+        await context.bot.send_message(
+            chat_id=admin_id,
+            text=f"💬 From @{username} ({client_id}):\n\n{msg.text}"
+        )
+    except Exception as e:
+        logging.warning(f"[support_relay] text failed: {e}")
+
+
 async def screenshot_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Admin: /screenshot <user_id> — request screenshot from client"""
     if not is_admin(update):
@@ -1162,6 +1216,17 @@ def build_application():
     app.add_handler(CommandHandler("disconnect", with_latency("disconnect", disconnect_cmd)))
     app.add_handler(CommandHandler("sessions", with_latency("sessions", sessions_cmd)))
     app.add_handler(CommandHandler("quickfix", with_latency("quickfix", quickfix_cmd)))
+
+    # === Support message relay (client → admin) ===
+    from telegram.ext import MessageHandler, filters
+    app.add_handler(MessageHandler(
+        filters.PHOTO | filters.Document.ALL,
+        with_latency("support_relay_media", _support_relay_media)
+    ))
+    app.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND,
+        with_latency("support_relay_text", _support_relay_text)
+    ))
 
     # === Bot Manager commands ===
     try:
