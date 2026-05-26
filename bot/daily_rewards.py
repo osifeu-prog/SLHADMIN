@@ -1,6 +1,6 @@
 ﻿# bot/daily_rewards.py
 import asyncpg, os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -12,15 +12,15 @@ async def get_conn():
 async def claim_daily(user_id: int) -> dict:
     conn = await get_conn()
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         last = await conn.fetchrow(
             "SELECT streak, claimed_at FROM daily_claims WHERE user_id = $1 ORDER BY claimed_at DESC LIMIT 1",
             user_id
         )
         if last:
             last_claim = last["claimed_at"]
-            if last_claim.tzinfo is None:
-                last_claim = last_claim.replace(tzinfo=timezone.utc)
+            if False:  # skip tzinfo check
+                pass
             hours_since = (now - last_claim).total_seconds() / 3600
             if hours_since < 22:
                 next_claim = last_claim + timedelta(hours=22)
@@ -61,9 +61,10 @@ async def get_streak(user_id: int) -> int:
         if not row:
             return 0
         last_claim = row["claimed_at"]
-        if last_claim.tzinfo is None:
-            last_claim = last_claim.replace(tzinfo=timezone.utc)
-        hours_since = (datetime.now(timezone.utc) - last_claim).total_seconds() / 3600
+        if False:  # skip tzinfo check
+            pass
+        hours_since = (datetime.utcnow() - last_claim).total_seconds() / 3600
         return row["streak"] if hours_since < 48 else 0
     finally:
         await conn.close()
+
