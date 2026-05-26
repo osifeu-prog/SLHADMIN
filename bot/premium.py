@@ -1,72 +1,39 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CallbackQueryHandler
 
-TON_WALLET = os.getenv("TON_WALLET", "")
+TON_WALLET = os.getenv('TON_WALLET', '')
 
 PLANS = {
-    "basic": {
-        "name": "בסיק",
-        "price_usd": 9,
-        "price_ton": 2.5,
-        "features": ["בונוס יומי x2", "100 SLH לחודש", "סמל בסיק"],
-    },
-    "pro": {
-        "name": "Pro",
-        "price_usd": 29,
-        "price_ton": 7.5,
-        "features": ["בונוס יומי x5", "500 SLH לחודש", "סמל Pro", "עדיפות בלוח מובילים"],
-    },
-    "vip": {
-        "name": "VIP",
-        "price_usd": 99,
-        "price_ton": 25,
-        "features": ["בונוס יומי x10", "2000 SLH לחודש", "סמל VIP", "גישה ל-Alpha features", "20% רויילטיס"],
-    },
+    'basic': {'name': 'Basic', 'price_usd': 9, 'price_ton': 2.5},
+    'pro': {'name': 'Pro', 'price_usd': 29, 'price_ton': 7.5},
+    'vip': {'name': 'VIP', 'price_usd': 99, 'price_ton': 25},
 }
 
 async def premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lines = ["⭐ *SLH Guardian Premium*
-"]
-    for key, plan in PLANS.items():
-        lines.append(f"*{plan['name']}* — ${plan['price_usd']}/חודש ({plan['price_ton']} TON)")
-        for f in plan['features']:
-            lines.append(f"  • {f}")
-        lines.append("")
-
-    lines.append("כדי לשדרג, לחץ על התוכנית:")
-
+    txt = 'SLH Guardian Premium Plans:'
+    txt += ' Basic $9 (2.5 TON) | Pro $29 (7.5 TON) | VIP $99 (25 TON)'
     buttons = [
-        [InlineKeyboardButton(f"⭐ {p['name']} — {p['price_ton']} TON", callback_data=f"premium_buy:{k}")]
-        for k, p in PLANS.items()
+        [InlineKeyboardButton('Basic - 2.5 TON', callback_data='premium_buy:basic')],
+        [InlineKeyboardButton('Pro - 7.5 TON', callback_data='premium_buy:pro')],
+        [InlineKeyboardButton('VIP - 25 TON', callback_data='premium_buy:vip')],
     ]
-    await update.message.reply_text(
-        "\n".join(lines),
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
+    await update.message.reply_text(txt, reply_markup=InlineKeyboardMarkup(buttons))
 
 async def premium_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    data = query.data
-    if not data.startswith("premium_buy:"):
+    if not query.data.startswith('premium_buy:'):
         return
-    key = data.split(":")[1]
+    key = query.data.split(':')[1]
     plan = PLANS.get(key)
     if not plan:
         return
-    wallet = TON_WALLET or "UQ... (wallet not configured)"
-    msg = (
-        f"⭐ *תוכנית {plan['name']}*\n\n"
-        f"מחיר: `{plan['price_ton']} TON` (~${plan['price_usd']}/חודש)\n\n"
-        f"שלח `{plan['price_ton']} TON` לכתובת:\n"
-        f"`{wallet}`\n\n"
-        f"אחרי התשלום, שלח צילום אישור ל-@osifeu\_prog ויופעל ידנית."
-    )
-    await query.edit_message_text(msg, parse_mode="Markdown")
-
-from telegram.ext import CallbackQueryHandler
+    n = plan['name']; t = plan['price_ton']; u = plan['price_usd']
+    wallet = TON_WALLET or 'UQ_NOT_CONFIGURED'
+    msg = 'Plan: ' + n + ' | ' + str(t) + ' TON (~$' + str(u) + '/month)'
+    msg += ' | Send to: ' + wallet + ' | After payment DM @osifeu_prog'
+    await query.edit_message_text(msg)
 
 def get_premium_handler():
-    return CallbackQueryHandler(premium_callback, pattern=r"^premium_buy:")
+    return CallbackQueryHandler(premium_callback, pattern=r'^premium_buy:')
