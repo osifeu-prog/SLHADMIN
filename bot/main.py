@@ -15,6 +15,7 @@ load_dotenv(".env.local")
 
 from bot.config import BOT_TOKEN, ENV, MODE, ADMIN_CHAT_ID, WEBHOOK_URL
 from bot.infrastructure import init_infrastructure, runtime_report
+from bot import db_live
 
 START_TS = time.time()
 CMD_HISTORY = deque(maxlen=30)
@@ -445,4 +446,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
