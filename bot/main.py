@@ -17,6 +17,7 @@ from bot.config import BOT_TOKEN, ENV, MODE, ADMIN_CHAT_ID, WEBHOOK_URL
 from bot.infrastructure import init_infrastructure, runtime_report
 from bot import db_live
 from bot import daily_rewards
+from bot.db_live import get_token_balance, get_stats, ensure_user, get_leaderboard
 
 START_TS = time.time()
 CMD_HISTORY = deque(maxlen=30)
@@ -105,6 +106,7 @@ async def _log_cmd(update: Update, name: str):
 # ====================== COMMANDS ======================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _log_cmd(update, "start")
+    await ensure_user(update.effective_user.id, update.effective_user.username)
     text = (
         f"```\n{ASCII_BANNER.strip()}\n```\n"
         "SLH Security + Ops Control\n\n"
@@ -338,18 +340,30 @@ async def referral_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def points_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _log_cmd(update, "points")
-    await update.message.reply_text("🏆 *הנקודות שלך:* `0`\n💡 100 נקודות = 10% הנחה", parse_mode='Markdown')
+    user_id = update.effective_user.id
+    balance = await get_token_balance(user_id, "SLH")
+    await update.message.reply_text(f"🏆 *יתרת SLH שלך:* `{balance}`", parse_mode='Markdown')
 
 async def leaderboard_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _log_cmd(update, "leaderboard")
-    await update.message.reply_text("📊 *טבלת מובילים*\nאין נתונים כרגע", parse_mode='Markdown')
+    rows = await get_leaderboard(10)
+    if not rows:
+        await update.message.reply_text("📊 אין נתונים עדיין.")
+        return
+    lines = ["🏆 *Top 10 SLH Holders*\n"]
+    for i, r in enumerate(rows, 1):
+        name = r.get("username") or "Anonymous"
+        bal = r.get("balance", 0)
+        lines.append(f"{i}. {name} — `{bal}` SLH")
+    await update.message.reply_text("\n".join(lines), parse_mode='Markdown')
 
 async def analytics_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _log_cmd(update, "analytics")
     if not is_admin(update):
         await update.message.reply_text("⛔ גישה מוגבלת לאדמינים בלבד.")
         return
-    text = f"📊 *SLH Guardian Analytics*\n\n👥 סה\"כ משתמשים: 0\n🔗 סה\"כ הפניות: 0\n📈 Uptime: {_uptime_s()//3600}h\nENV: {ENV}\nMODE: {MODE}"
+    stats = await get_stats()
+    text = f"📊 *SLH Guardian Analytics*\n\n👥 סה\"כ משתמשים: {stats.get('users',0)}\n🔗 סה\"כ הפניות: {stats.get('referrals',0)}\n📈 Uptime: {_uptime_s()//3600}h\nENV: {ENV}\nMODE: {MODE}"
     await update.message.reply_text(text, parse_mode='Markdown')
 
 async def royalties_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -478,6 +492,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
 
 
 
