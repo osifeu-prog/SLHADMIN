@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 import asyncio
 from typing import Optional
@@ -133,3 +133,4 @@ async def run_migrations_safe():
         logger.info("Alembic migrations applied")
     except Exception as e:
         logger.error("Migration failed: %s: %s", type(e).__name__, e)
+
