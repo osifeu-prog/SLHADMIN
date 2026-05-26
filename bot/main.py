@@ -143,6 +143,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/phonediag   אבחון מכשיר\n"
         "/phonefix    תיקון טלפון\n"
         "/appscan     בדיקת אפליקציות\n\n"
+        "🧠 Quiz & Rewards:\n"
+        "/quiz       קריפטו קוויז — הרוויח XP + SLH\n\n"
         "➕ נוספות: /referral, /points, /leaderboard, /analytics, /royalties, /roadmap"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
