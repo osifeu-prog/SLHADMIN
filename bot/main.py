@@ -117,6 +117,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/whoami    \u05de\u05d9 \u05d0\u05e0\u05d9\n"
         "/health    \u05de\u05e6\u05d1 \u05de\u05e2\u05e8\u05db\u05ea\n"
         "/support   \U0001f6ce\ufe0f \u05d1\u05e7\u05e9 \u05ea\u05de\u05d9\u05db\u05d4 \u05de\u05e8\u05d7\u05d5\u05e7\n"
+        "/ticket    \U0001f3ab \u05e4\u05ea\u05d7 \u05db\u05e8\u05d8\u05d9\u05e1 \u05ea\u05de\u05d9\u05db\u05d4\n"
+        "/system    \U0001f5a5 \u05e1\u05d8\u05d8\u05d5\u05e1 \u05de\u05e2\u05e8\u05db\u05ea\n"
+        "/snapshot  \U0001f4f8 \u05e1\u05e0\u05e4\u05e9\u05d5\u05d8 \u05de\u05e2\u05e8\u05db\u05ea\n"
     )
     if is_admin(update):
         text += (
@@ -297,7 +300,7 @@ async def admin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("\U0001f9fe BOOT/ADMIN REPORT\n\n" + await runtime_report(full=True))
 
 # ============================================================
-# REMOTE SUPPORT — TeamViewer-like customer assistance
+# REMOTE SUPPORT ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â TeamViewer-like customer assistance
 # ============================================================
 _support_sessions = {}  # {client_chat_id: {admin_id, started, notes, steps}}
 _support_queue = []     # [{chat_id, username, issue, ts}]
@@ -502,11 +505,11 @@ async def quickfix_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_message.reply_text(f"\u274c {e}")
 
 # ============================================================
-# PHONE DIAGNOSTICS — Remote phone troubleshooting
+# PHONE DIAGNOSTICS ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Remote phone troubleshooting
 # ============================================================
 
 async def phonediag_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Admin: /phonediag <user_id> — send full phone diagnostic checklist"""
+    """Admin: /phonediag <user_id> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â send full phone diagnostic checklist"""
     await _log_cmd(update, "phonediag")
     if not is_admin(update): return
     args = context.args or []
@@ -534,7 +537,7 @@ async def phonediag_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_message.reply_text(f"\u274c {e}")
 
 async def phonefix_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Admin: /phonefix <user_id> <template> — send phone fix templates"""
+    """Admin: /phonefix <user_id> <template> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â send phone fix templates"""
     await _log_cmd(update, "phonefix")
     if not is_admin(update): return
     args = context.args or []
@@ -634,7 +637,7 @@ async def phonefix_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_message.reply_text(f"\u274c {e}")
 
 async def appscan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Admin: /appscan <user_id> — guide user through checking suspicious apps"""
+    """Admin: /appscan <user_id> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â guide user through checking suspicious apps"""
     await _log_cmd(update, "appscan")
     if not is_admin(update): return
     args = context.args or []
@@ -672,6 +675,35 @@ async def post_init(app):
             chat_id=int(ADMIN_CHAT_ID),
             text="\U0001f9fe BOOT/ADMIN REPORT\n\n" + await runtime_report(full=True),
         )
+
+
+async def chatid_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    user = update.effective_user
+    title = getattr(chat, "title", "private")
+    msg = f"Chat ID: {chat.id}\nType: {chat.type}\nTitle: {title}\nUser ID: {user.id}"
+    await update.message.reply_text(msg)
+
+async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != int(os.getenv("ADMIN_ID", "224223270")):
+        await update.message.reply_text("Unauthorized")
+        return
+    if not context.args:
+        await update.message.reply_text("Usage: /broadcast <message>")
+        return
+    msg = " ".join(context.args)
+    chat_ids_str = os.getenv("BROADCAST_CHATS", "")
+    if not chat_ids_str:
+        await update.message.reply_text("Set BROADCAST_CHATS in env first")
+        return
+    ok, fail = 0, 0
+    for cid in chat_ids_str.split(","):
+        try:
+            await context.bot.send_message(chat_id=int(cid.strip()), text=msg)
+            ok += 1
+        except Exception as e:
+            fail += 1
+    await update.message.reply_text(f"Broadcast: {ok} ok, {fail} failed")
 
 def main():
     if not BOT_TOKEN:
@@ -714,12 +746,38 @@ def main():
     app.add_handler(CommandHandler("phonefix", phonefix_cmd))
     app.add_handler(CommandHandler("appscan", appscan_cmd))
 
-    # Guardian ↔ slh-api bridge (2026-04-20)
+    # Guardian ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â slh-api bridge (2026-04-20)
     try:
         from bot.commands.guardian_ops import register_handlers as _register_guardian_ops
         _register_guardian_ops(app)
     except Exception as e:
         logger.warning("guardian_ops registration failed: %s", e)
+    try:
+        from bot.commands.system_cmd import system_cmd
+        app.add_handler(CommandHandler("system", system_cmd))
+        logger.info("system_cmd registered")
+    except Exception as e:
+        logger.warning("system_cmd registration failed: %s", e)
+    app.add_handler(CommandHandler("chatid", chatid_cmd))
+    app.add_handler(CommandHandler("broadcast", broadcast_cmd))
+
+    try:
+        from bot.commands.ticket_cmd import register_handlers as _reg_ticket
+        _reg_ticket(app)
+    except Exception as e:
+        logger.warning("ticket_cmd registration failed: %s", e)
+
+    try:
+        from bot.commands.snapshot_cmd import register_handlers as _reg_snapshot
+        _reg_snapshot(app)
+    except Exception as e:
+        logger.warning("snapshot_cmd registration failed: %s", e)
+
+    try:
+        from bot.commands.snapshot_cmd import register_handlers as _reg_snapshot
+        _reg_snapshot(app)
+    except Exception as e:
+        logger.warning("snapshot_cmd registration failed: %s", e)
 
     print("Guardian SaaS started")
 
