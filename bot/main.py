@@ -16,6 +16,7 @@ load_dotenv(".env.local")
 from bot.config import BOT_TOKEN, ENV, MODE, ADMIN_CHAT_ID, WEBHOOK_URL
 from bot.infrastructure import init_infrastructure, runtime_report
 from bot import db_live
+from bot import daily_rewards
 
 START_TS = time.time()
 CMD_HISTORY = deque(maxlen=30)
@@ -387,6 +388,36 @@ async def ticket_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # (ניתן להוסיף בקלות את שאר הפקודות מ-backup)
 
+
+async def daily_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await _log_cmd(update, "daily")
+    u = update.effective_user
+    await db_live.ensure_user(u.id, u.username)
+    result = await daily_rewards.claim_daily(u.id)
+    if result["ok"]:
+        streak = result["streak"]
+        amount = result["amount"]
+        bars = "🔥" * streak + "⬜" * (7 - streak)
+        next_reward = daily_rewards.STREAK_REWARDS.get(min(streak + 1, 7), 200)
+        text = (
+            f"✅ *Daily Reward נדרש!*\n\n"
+            f"💰 קיבלת: `{amount} SLH`\n"
+            f"🔥 Streak: `{streak}/7`\n"
+            f"{bars}\n\n"
+            f"⏭ מחר: `+{next_reward} SLH`\n"
+            f"💡 שמור על ה-Streak לקבל `200 SLH` ביום 7!"
+        )
+    else:
+        streak = result["streak"]
+        bars = "🔥" * streak + "⬜" * (7 - streak)
+        text = (
+            f"⏳ *כבר תבעת היום!*\n\n"
+            f"🕐 הבא בעוד: `{result['wait']}`\n"
+            f"🔥 Streak נוכחי: `{streak}/7`\n"
+            f"{bars}"
+        )
+    await update.message.reply_text(text, parse_mode='Markdown')
+
 # ====================== POST_INIT ======================
 async def post_init(app):
     await init_infrastructure()
@@ -424,6 +455,7 @@ def main():
     app.add_handler(CommandHandler("roadmap", roadmap_cmd))
     app.add_handler(CommandHandler("support", support_cmd))
     app.add_handler(CommandHandler("ticket", ticket_cmd))
+    app.add_handler(CommandHandler("daily", daily_cmd))
 
     logger.info("✅ Guardian SaaS started  Full Features Restored")
     mode = (MODE or "polling").lower()
@@ -446,5 +478,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
