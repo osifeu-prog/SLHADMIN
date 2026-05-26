@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async async def _global_error_handler(update, context):
+async def _global_error_handler(update, context):
     try:
         u = getattr(update, "effective_user", None)
         c = getattr(update, "effective_chat", None)
@@ -478,6 +478,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
