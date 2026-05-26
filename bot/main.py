@@ -19,6 +19,7 @@ from bot import db_live
 from bot import daily_rewards
 from bot.db_live import get_token_balance, get_stats, ensure_user, get_leaderboard
 from bot.quiz import quiz_command, get_quiz_handler
+from bot.premium import premium_command, get_premium_handler
 
 START_TS = time.time()
 CMD_HISTORY = deque(maxlen=30)
@@ -464,6 +465,8 @@ def main():
     app.add_handler(CommandHandler("admin", admin_cmd))
     app.add_handler(CommandHandler("admin_menu", admin_menu))
     app.add_handler(CommandHandler("quiz", quiz_command))
+    app.add_handler(CommandHandler("premium", premium_command))
+    app.add_handler(get_premium_handler())
     app.add_handler(get_quiz_handler())
     app.add_handler(CallbackQueryHandler(button_callback))
     app.add_handler(CommandHandler("referral", referral_cmd))
